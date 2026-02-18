@@ -1,73 +1,147 @@
 # AuraTwin Windows Client 💻
 
-Official desktop application for **AuraTwin** - An Affective Digital Twin for Personalized Well-being and Self-Correction.
+Official desktop application for AuraTwin — An Affective Digital Twin for Personalized Well-being and Self-Correction.
 
-This repository contains the "sensor" component of the system: a lightweight Python application that runs in the background to capture and process emotional data securely.
+This repository contains the **Windows “sensor” component** of the AuraTwin system: a lightweight Python application that runs in the background to capture and process emotional data securely.
+
+---
 
 ## 📖 About
 
-This is the Windows Client repository for our graduation project at **Yaşar University**, Computer Engineering Department. The application is designed to monitor user well-being without intruding on daily tasks. It utilizes "Capture & Release" technology to ensure privacy while providing high-frequency data for the digital twin.
+This is the Windows Client repository for our graduation project at **Yaşar University – Computer Engineering Department**.
+
+AuraTwin aims to create an affective digital twin that supports personalized well-being and self-correction. The Windows client acts as the sensing layer of the system.
+
+The application is designed to monitor user well-being without intruding on daily tasks. It utilizes **“Capture & Release” technology** to ensure privacy while providing high-frequency emotional data for the digital twin.
+
+All captured data is processed temporarily in memory and securely transmitted to the backend infrastructure.
+
+---
+
+## 🏗️ System Role
+
+The Windows Client serves as:
+
+- 📷 Emotional data capture layer  
+- 🧠 Local preprocessing unit  
+- 🔐 Secure transmission agent  
+- 🔄 Continuous background sensor  
+
+It is intentionally lightweight and optimized for minimal system impact.
+
+---
 
 ## 🚀 Tech Stack
 
-* **Python** - Core application logic
-* **OpenCV (cv2)** - Camera access and image processing
-* **PyQt5** - Modern GUI and System Tray integration
-* **Requests** - Secure communication with AWS Backend
-* **Base64** - In-memory image encoding (Privacy-first)
+- **Python** – Core application logic  
+- **OpenCV (cv2)** – Camera access and image processing  
+- **PyQt5** – Modern GUI and System Tray integration  
+- **Requests** – Secure communication with AWS backend  
+- **Base64** – In-memory image encoding (privacy-first architecture)  
+
+---
 
 ## ✨ Key Features
 
-* 🔒 **Privacy-First Architecture:** Images are never saved to the hard drive. They are processed entirely in RAM and sent directly to the server.
-* ☁️ **Edge Processing:** Converts images to Base64 strings for secure transmission.
-* 🤫 **Background Mode:** Runs silently in the System Tray (near the clock).
-* ⚡ **Smart Collision Detection:** Automatically skips cycles if the camera is being used by other apps (Zoom, Meet, etc.).
-* 🔑 **Token-Based Authentication:** Securely links the desktop app with the user's web dashboard.
+### 🔒 Privacy-First Architecture
+- Images are **never saved to disk**  
+- All processing happens in RAM  
+- No local image storage  
+- Direct secure transmission  
+
+### ☁️ Edge Processing
+- Frames are encoded into Base64 format  
+- Prepared for secure API communication  
+- Lightweight transmission payload  
+
+### 🤫 Background Mode
+- Runs silently in the **System Tray**  
+- Does not interrupt workflow  
+- Minimal CPU and memory usage  
+
+### ⚡ Smart Collision Detection
+- Detects camera usage conflicts  
+- Skips capture cycles if another app (Zoom, Meet, etc.) is using the camera  
+- Prevents system instability  
+
+### 🔑 Token-Based Authentication
+- Each client is linked using a unique App Key  
+- Secure pairing with the AuraTwin web dashboard  
+- Authenticated API communication  
+
+---
 
 ## 🛠️ Installation & Setup
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/AuraTwin/AuraTwin-windowsClient.git 
-   cd AuraTwin-windowsClient
+### 1️⃣ Clone the Repository
 
+```bash
+git clone https://github.com/KULLANICI_ADIN/AuraTwin-windowsClient.git
+cd AuraTwin-windowsClient
 ```
 
-2. **Install dependencies:**
+### 2️⃣ Install Dependencies
+
 ```bash
 pip install -r requirements.txt
-
 ```
 
+### 3️⃣ Run the Application
 
-3. **Run the application:**
 ```bash
 python main.py
-
 ```
 
+---
 
-4. **Configuration:**
-* Get your **App Key** from the [AuraTwin Dashboard](https://auratwin.netlify.app/).
-* Enter the key in the application settings.
+## ⚙️ Configuration
 
+1. Log in to your **AuraTwin Dashboard**.
+2. Retrieve your **App Key**.
+3. Open the Windows Client settings.
+4. Enter the App Key to link your device.
 
+After successful authentication, the client will begin secure background operation.
+
+---
+
+## 🔐 Privacy & Security Principles
+
+- No image persistence  
+- In-memory processing only  
+- Secure HTTPS communication  
+- Token-based authentication  
+- Minimal data retention philosophy  
+
+AuraTwin prioritizes user privacy while maintaining high-frequency emotional state tracking.
+
+---
 
 ## 👥 Team
 
-* **Ali Haktan SIĞIN** – 21070001004
-* **Yiğit Emre ÇAY** – 21070001008
-* **Utku DERİCİ** – 21070001031
-* **Ahmet Özgür KORKMAZ** – 21070001046
-* **Academic Advisor:** Doç. Dr. Mete Eminağaoğlu
+- **Ali Haktan SIĞIN** – 21070001004  
+- **Yiğit Emre ÇAY** – 21070001008  
+- **Utku DERİCİ** – 21070001031  
+- **Ahmet Özgür KORKMAZ** – 21070001046  
 
-## 🎓 Project
+**Academic Advisor:**  
+Doç. Dr. Mete Eminağaoğlu  
 
-**COMP4910 Senior Design Project**
-**Yaşar University** - Computer Engineering Department
+---
 
-```
+## 🎓 Project Information
 
-**Not:** `SENIN_KULLANICI_ADIN` kısmını kendi GitHub kullanıcı adınla değiştirmeyi unutma. Eğer başka bir düzenleme istersen hemen yapabiliriz!
+**COMP4910 – Senior Design Project**  
+Yaşar University  
+Computer Engineering Department  
 
-```
+---
+
+## 📌 Notes
+
+This repository contains only the Windows Client (sensor layer).  
+Backend services and web dashboard components are maintained separately.
+
+---
+
+© 2024 AuraTwin Project Team
