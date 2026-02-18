@@ -28,7 +28,7 @@ This is the Windows Client repository for our graduation project at **Yaşar Uni
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/SENIN_KULLANICI_ADIN/AuraTwin-windowsClient.git](https://github.com/SENIN_KULLANICI_ADIN/AuraTwin-windowsClient.git)
+   git clone https://github.com/AuraTwin/AuraTwin-windowsClient.git 
    cd AuraTwin-windowsClient
 
 ```
