@@ -144,4 +144,4 @@ Backend services and web dashboard components are maintained separately.
 
 ---
 
-© 2024 AuraTwin Project Team
+© 2026 AuraTwin Project Team
