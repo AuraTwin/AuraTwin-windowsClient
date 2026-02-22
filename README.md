@@ -70,13 +70,15 @@ It is intentionally lightweight and optimized for minimal system impact.
 - Authenticated API communication  
 
 ---
-
 ## 📸 Interface Preview
--![WhatsApp Image 2026-02-22 at 17 55 56](https://github.com/user-attachments/assets/24dc0ce2-4ad3-4fd6-b01b-e16f83453163)
 
+The AuraTwin Windows Client is designed with a minimalist and user-friendly interface to ensure a seamless background experience.
 
--<img width="258" height="104" alt="d9e8e86f-adbc-4c88-88ce-a8800b12aa32" src="https://github.com/user-attachments/assets/288a4a6f-23b8-4533-bb36-cdd8a606d10a" />
-
+| **Authentication & Configuration** | **System Tray Operation** |
+|:---:|:---:|
+| ![AuraTwin Main UI](- ![WhatsApp Image 2026-02-22 at 17 55 56](https://github.com/user-attachments/assets/24dc0ce2-4ad3-4fd6-b01b-e16f83453163)) | ![AuraTwin Tray](<img width="258" height="104" alt="d9e8e86f-adbc-4c88-88ce-a8800b12aa32" src="https://github.com/user-attachments/assets/962724f6-e091-4998-9f75-c41ae0ace3e9" />
+) |
+| [cite_start]*Pairing the client using a unique App Key for secure data synchronization.* | [cite_start]*Operating silently in the system tray to ensure non-intrusive monitoring.* |
 
 ---
 ## 🛠️ Installation & Setup
