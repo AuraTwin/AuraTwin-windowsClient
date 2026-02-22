@@ -72,9 +72,10 @@ It is intentionally lightweight and optimized for minimal system impact.
 ---
 
 ## 📸 Interface Preview
-![WhatsApp Image 2026-02-22 at 17 55 56](https://github.com/user-attachments/assets/24dc0ce2-4ad3-4fd6-b01b-e16f83453163)
+-![WhatsApp Image 2026-02-22 at 17 55 56](https://github.com/user-attachments/assets/24dc0ce2-4ad3-4fd6-b01b-e16f83453163)
 
-<img width="258" height="104" alt="d9e8e86f-adbc-4c88-88ce-a8800b12aa32" src="https://github.com/user-attachments/assets/288a4a6f-23b8-4533-bb36-cdd8a606d10a" />
+
+-<img width="258" height="104" alt="d9e8e86f-adbc-4c88-88ce-a8800b12aa32" src="https://github.com/user-attachments/assets/288a4a6f-23b8-4533-bb36-cdd8a606d10a" />
 
 
 ---
