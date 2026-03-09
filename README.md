@@ -182,12 +182,11 @@ To adjust settings, click **⚙ Settings** to:
 
 ---
 
-## Interface Preview
+## Application Demo
 
-| Login Screen | Status Screen |
-|:---:|:---:|
-| <img src="https://github.com/user-attachments/assets/24dc0ce2-4ad3-4fd6-b01b-e16f83453163" width="370"> | <img src="https://github.com/user-attachments/assets/962724f6-e091-4998-9f75-c41ae0ace3e9" width="370"> |
-| *Enter your App Key to pair the client with your account.* | *Running silently in the background with system tray integration.* |
+A full walkthrough of the AuraTwin Windows Client — from App Key login to background analysis running in the system tray.
+
+<video src="https://github.com/user-attachments/assets/b61e2269-767e-4fb7-ad6a-acdbf648279d" controls width="600"></video>
 
 ---
 
