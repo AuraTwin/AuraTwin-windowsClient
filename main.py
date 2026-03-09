@@ -13,7 +13,13 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QLineEdit,
 from PyQt5.QtGui import QIcon, QFont, QPixmap
 from PyQt5.QtCore import QTimer, Qt
 
-load_dotenv()
+# PyInstaller exe içinden çalışırken dosyaların yolunu doğru bul
+if getattr(sys, "frozen", False):
+    BASE_DIR = sys._MEIPASS
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 # --- SABİTLER ---
 AWS_API_URL         = os.getenv("AWS_API_URL", "http://localhost:8000/predict-emotion")
@@ -24,7 +30,7 @@ FIRESTORE_BASE = (
     f"/databases/(default)/documents"
 )
 CONFIG_FILE   = "config.json"
-LOGO_FILENAME = "AuraTwin_Logo.png"
+LOGO_FILENAME = os.path.join(BASE_DIR, "AuraTwin_Logo.png")
 
 # --- DİL SÖZLÜĞÜ ---
 STRINGS = {
