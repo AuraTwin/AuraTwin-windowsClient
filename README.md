@@ -115,6 +115,16 @@ users/{uid}/last_report/data
 
 ---
 
+## Download
+
+> **No Python required.** Just download and run.
+
+[**Download AuraTwin.exe (v1.0.0)**](https://github.com/AuraTwin/AuraTwin-windowsClient/releases/latest/download/AuraTwin.exe)
+
+Or visit the [Releases page](https://github.com/AuraTwin/AuraTwin-windowsClient/releases) for all versions.
+
+---
+
 ## Installation & Setup
 
 ### Prerequisites
