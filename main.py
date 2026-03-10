@@ -5,6 +5,7 @@ import json
 import requests
 import os
 import webbrowser
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QLineEdit,
                              QPushButton, QVBoxLayout, QHBoxLayout,
@@ -22,7 +23,7 @@ else:
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 # --- SABİTLER ---
-AWS_API_URL         = os.getenv("AWS_API_URL", "http://localhost:8000/predict-emotion")
+AWS_API_URL         = os.getenv("AWS_API_URL")
 FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID")
 FIREBASE_API_KEY    = os.getenv("FIREBASE_API_KEY")
 FIRESTORE_BASE = (
@@ -925,24 +926,33 @@ class AuraTwinApp(QWidget):
             self.set_status("status_no_frame", "error")
             return
 
+        # Kamera meşgul kontrolü: ortalama parlaklık 5'in altındaysa siyah frame → kamera başka uygulama tarafından tutuluyor
+        if frame.mean() < 5:
+            print("Kamera meşgul (siyah frame) — bu periyot pas geçildi.")
+            self.set_status("status_no_camera", "warning")
+            return
+
         _, buffer = cv2.imencode('.jpg', frame)
         jpg_b64 = base64.b64encode(buffer).decode('utf-8')
 
         print(f"Görüntü yakalandı! Boyut: {len(jpg_b64)} karakter.")
         self.set_status("status_active", "success")
 
-        # BURADA AWS AKTIF EDİLECEK (Teknik Dokuman Bölüm 5.3):
-        # try:
-        #     from datetime import datetime, timezone
-        #     payload = {
-        #         "app_key":   self.config.get("app_key"),
-        #         "image":     jpg_b64,
-        #         "timestamp": datetime.now(timezone.utc).isoformat(),
-        #     }
-        #     response = requests.post(AWS_API_URL, json=payload, timeout=15)
-        #     print(f"AWS yanıtı: {response.status_code}")
-        # except requests.RequestException as e:
-        #     print(f"AWS bağlantı hatası: {e}")
+        try:
+            payload = {
+                "app_key":   self.config.get("app_key"),
+                "image":     jpg_b64,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+            response = requests.post(AWS_API_URL, json=payload, timeout=15)
+            print(f"AWS yanıtı: {response.status_code} — {response.text[:200]}")
+            if response.status_code == 200:
+                self.set_status("status_active", "success")
+            else:
+                self.set_status("status_conn_err", "error")
+        except requests.RequestException as e:
+            print(f"AWS bağlantı hatası: {e}")
+            self.set_status("status_conn_err", "error")
 
 
 # --- BAŞLAT ---
