@@ -54,6 +54,7 @@ STRINGS = {
         "status_active":     "● Aktif — Analiz çalışıyor",
         "status_paused":     "⏸ Analiz duraklatıldı",
         "status_no_camera":  "● Kamera bulunamadı / meşgul",
+        "status_cam_busy":   "● Kamera başka bir uygulama tarafından kullanılıyor",
         "status_no_frame":   "● Görüntü alınamadı",
         "status_conn_err":   "Bağlantı hatası.",
         "status_perm_err":   "Firestore izin hatası.",
@@ -113,6 +114,7 @@ STRINGS = {
         "status_active":     "● Active — Analysis running",
         "status_paused":     "⏸ Analysis paused",
         "status_no_camera":  "● Camera not found / busy",
+        "status_cam_busy":   "● Camera is being used by another application",
         "status_no_frame":   "● Could not capture image",
         "status_conn_err":   "Connection error.",
         "status_perm_err":   "Firestore permission error.",
@@ -929,7 +931,7 @@ class AuraTwinApp(QWidget):
         # Kamera meşgul kontrolü: ortalama parlaklık 5'in altındaysa siyah frame → kamera başka uygulama tarafından tutuluyor
         if frame.mean() < 5:
             print("Kamera meşgul (siyah frame) — bu periyot pas geçildi.")
-            self.set_status("status_no_camera", "warning")
+            self.set_status("status_cam_busy", "warning")
             return
 
         _, buffer = cv2.imencode('.jpg', frame)
