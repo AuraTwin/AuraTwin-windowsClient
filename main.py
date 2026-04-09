@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from dotenv import load_dotenv
 from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QLineEdit,
                              QPushButton, QVBoxLayout, QHBoxLayout,
-                             QCheckBox, QSpinBox, QDialog, QMessageBox,
+                             QCheckBox, QComboBox, QDialog, QMessageBox,
                              QSystemTrayIcon, QMenu, QAction, QFrame)
 from PyQt5.QtGui import QIcon, QFont, QPixmap
 from PyQt5.QtCore import QTimer, Qt
@@ -239,23 +239,51 @@ class SettingsDialog(QDialog):
         self.lbl_interval.setStyleSheet("color: #374151;")
         layout.addWidget(self.lbl_interval)
 
-        row = QHBoxLayout()
-        self.spin_interval = QSpinBox()
-        self.spin_interval.setRange(1, 60)
-        self.spin_interval.setValue(self.main.config.get("interval_minutes", 5))
-        self.spin_interval.setFixedHeight(40)
-        self.spin_interval.setFont(QFont("Segoe UI", 11))
-        self.spin_interval.setStyleSheet("""
-            QSpinBox {
+        self._interval_options = [1, 2, 5, 10, 30, 60]
+        current_interval = self.main.config.get("interval_minutes", 5)
+
+        combo_wrapper = QFrame()
+        combo_wrapper.setFixedHeight(40)
+        combo_wrapper.setStyleSheet("""
+            QFrame {
                 border: 2px solid #DDD6FE; border-radius: 10px;
-                padding: 0 10px; color: #1E1B4B; background: #FAFAFA;
+                background: #FAFAFA;
             }
-            QSpinBox:focus { border-color: #7C3AED; }
-            QSpinBox::up-button, QSpinBox::down-button { width: 24px; border-radius: 6px; }
         """)
-        row.addWidget(self.spin_interval)
-        row.addStretch()
-        layout.addLayout(row)
+        combo_inner = QHBoxLayout(combo_wrapper)
+        combo_inner.setContentsMargins(4, 0, 0, 0)
+        combo_inner.setSpacing(0)
+
+        self.combo_interval = QComboBox()
+        suffix = "dk" if self.main.lang == "tr" else "min"
+        for val in self._interval_options:
+            self.combo_interval.addItem(f"  {val} {suffix}", val)
+        idx = self._interval_options.index(current_interval) if current_interval in self._interval_options else 2
+        self.combo_interval.setCurrentIndex(idx)
+        self.combo_interval.setFont(QFont("Segoe UI", 11))
+        self.combo_interval.setMaxVisibleItems(4)
+        self.combo_interval.setStyleSheet("""
+            QComboBox {
+                border: none; background: transparent;
+                color: #1E1B4B; padding: 0 4px;
+            }
+            QComboBox::drop-down { width: 0px; border: none; }
+            QComboBox QAbstractItemView {
+                border: 2px solid #DDD6FE; border-radius: 8px;
+                background: #FFFFFF; selection-background-color: #EDE9FE;
+                selection-color: #4C1D95; color: #1E1B4B;
+            }
+        """)
+        combo_inner.addWidget(self.combo_interval)
+
+        lbl_arrow = QLabel("▼")
+        lbl_arrow.setFixedWidth(32)
+        lbl_arrow.setAlignment(Qt.AlignCenter)
+        lbl_arrow.setFont(QFont("Segoe UI", 9))
+        lbl_arrow.setStyleSheet("color: #7C3AED; border: none; background: transparent;")
+        combo_inner.addWidget(lbl_arrow)
+
+        layout.addWidget(combo_wrapper)
 
         self.lbl_note = QLabel()
         self.lbl_note.setFont(QFont("Segoe UI", 9))
@@ -345,7 +373,6 @@ class SettingsDialog(QDialog):
         self.setWindowTitle(t("settings_title"))
         self.lbl_title.setText(t("settings_heading"))
         self.lbl_interval.setText(t("interval_label"))
-        self.spin_interval.setSuffix(t("interval_suffix"))
         self.lbl_note.setText(t("interval_note"))
         self.lbl_analysis.setText(t("analysis_label"))
         self.lbl_lang.setText(t("lang_label"))
@@ -404,7 +431,7 @@ class SettingsDialog(QDialog):
         self._update_toggle_btn()
 
     def save_and_close(self):
-        minutes = self.spin_interval.value()
+        minutes = self.combo_interval.currentData()
         self.main.config["interval_minutes"] = minutes
         self.main.save_config()
         if not self.main.is_paused:
