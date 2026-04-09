@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QLineEdit,
                              QPushButton, QVBoxLayout, QHBoxLayout,
                              QCheckBox, QComboBox, QDialog, QMessageBox,
                              QSystemTrayIcon, QMenu, QAction, QFrame)
-from PyQt5.QtGui import QIcon, QFont, QPixmap
+from PyQt5.QtGui import QIcon, QFont, QPixmap, QImage
 from PyQt5.QtCore import QTimer, Qt
 
 # PyInstaller exe içinden çalışırken dosyaların yolunu doğru bul
@@ -94,6 +94,15 @@ STRINGS = {
             "Bu App Key sistemde bulunamadı.\n"
             "Web panelinden doğru key'i kopyaladığınızdan emin olun."
         ),
+        # Test penceresi
+        "test_btn":           "🎯  Test Et",
+        "test_title":         "AuraTwin — Kamera Testi",
+        "test_heading":       "Kamera Testi",
+        "test_send_btn":      "📸  Çek & Gönder",
+        "test_no_camera":     "Kamera açılamadı.",
+        "test_sending":       "Gönderiliyor...",
+        "test_sent":          "✅  Gönderildi! Sonucu Dashboard'dan takip edin.",
+        "test_error":         "❌  Gönderim hatası. Bağlantıyı kontrol edin.",
     },
     "en": {
         "subtitle":        "Well-being Assistant",
@@ -154,6 +163,15 @@ STRINGS = {
             "This App Key was not found in the system.\n"
             "Make sure you copied the correct key from the web panel."
         ),
+        # Test window
+        "test_btn":           "🎯  Test",
+        "test_title":         "AuraTwin — Camera Test",
+        "test_heading":       "Camera Test",
+        "test_send_btn":      "📸  Capture & Send",
+        "test_no_camera":     "Could not open camera.",
+        "test_sending":       "Sending...",
+        "test_sent":          "✅  Sent! Check Dashboard for results.",
+        "test_error":         "❌  Send error. Check your connection.",
     },
 }
 
@@ -200,6 +218,145 @@ def validate_app_key(app_key):
         "name":    get_string(profile_doc, "name") or "",
         "surname": get_string(profile_doc, "surname") or "",
     }
+
+
+# --- TEST DİYALOĞU ---
+
+class TestDialog(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.main = parent
+        self._current_frame = None
+        self.cap = None
+        self.cam_timer = QTimer()
+
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.setFixedWidth(480)
+        if os.path.exists(LOGO_FILENAME):
+            self.setWindowIcon(QIcon(LOGO_FILENAME))
+        self.setWindowTitle(self.main.t("test_title"))
+        self.setStyleSheet("background-color: #F5F3FF;")
+
+        outer = QVBoxLayout()
+        outer.setContentsMargins(24, 24, 24, 24)
+
+        card = QFrame()
+        card.setStyleSheet("QFrame { background-color: #FFFFFF; border-radius: 16px; }")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(24, 28, 24, 24)
+        layout.setSpacing(14)
+
+        lbl_title = QLabel(self.main.t("test_heading"))
+        lbl_title.setFont(QFont("Segoe UI", 15, QFont.Bold))
+        lbl_title.setStyleSheet("color: #4C1D95;")
+        lbl_title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(lbl_title)
+
+        # Kamera görüntüsü
+        self.lbl_camera = QLabel()
+        self.lbl_camera.setFixedSize(432, 324)
+        self.lbl_camera.setAlignment(Qt.AlignCenter)
+        self.lbl_camera.setStyleSheet(
+            "background-color: #1E1B4B; border-radius: 10px; color: #9CA3AF;"
+        )
+        self.lbl_camera.setText("📷")
+        self.lbl_camera.setFont(QFont("Segoe UI", 32))
+        layout.addWidget(self.lbl_camera)
+
+        # Durum etiketi
+        self.lbl_status = QLabel("")
+        self.lbl_status.setAlignment(Qt.AlignCenter)
+        self.lbl_status.setFont(QFont("Segoe UI", 9))
+        self.lbl_status.setStyleSheet("color: #6B7280;")
+        self.lbl_status.setWordWrap(True)
+        layout.addWidget(self.lbl_status)
+
+        # Çek & Gönder butonu
+        self.btn_send = QPushButton(self.main.t("test_send_btn"))
+        self.btn_send.setFixedHeight(48)
+        self.btn_send.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self.btn_send.setCursor(Qt.PointingHandCursor)
+        self.btn_send.setStyleSheet("""
+            QPushButton {
+                background-color: #7C3AED; color: white;
+                border-radius: 10px; border: none;
+            }
+            QPushButton:hover { background-color: #6D28D9; }
+            QPushButton:pressed { background-color: #5B21B6; }
+            QPushButton:disabled { background-color: #C4B5FD; }
+        """)
+        self.btn_send.clicked.connect(self._capture_and_send)
+        layout.addWidget(self.btn_send)
+
+        outer.addWidget(card)
+        self.setLayout(outer)
+
+        self.adjustSize()
+        geo = parent.frameGeometry()
+        self.move(
+            geo.x() + (geo.width() - self.width()) // 2,
+            geo.y() + (geo.height() - self.height()) // 2,
+        )
+
+        self._start_camera()
+
+    def _start_camera(self):
+        self.cap = cv2.VideoCapture(0)
+        if not self.cap.isOpened():
+            self.lbl_camera.setText(self.main.t("test_no_camera"))
+            self.btn_send.setEnabled(False)
+            return
+        self.cam_timer.timeout.connect(self._update_frame)
+        self.cam_timer.start(33)
+
+    def _update_frame(self):
+        if not self.cap or not self.cap.isOpened():
+            return
+        ret, frame = self.cap.read()
+        if not ret:
+            return
+        self._current_frame = frame
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        h, w, ch = frame_rgb.shape
+        qt_img = QImage(frame_rgb.data, w, h, ch * w, QImage.Format_RGB888)
+        self.lbl_camera.setPixmap(
+            QPixmap.fromImage(qt_img).scaled(432, 324, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        )
+
+    def _capture_and_send(self):
+        if self._current_frame is None:
+            return
+        self.btn_send.setEnabled(False)
+        self.lbl_status.setStyleSheet("color: #3B82F6;")
+        self.lbl_status.setText(self.main.t("test_sending"))
+        QApplication.processEvents()
+
+        _, buffer = cv2.imencode('.jpg', self._current_frame)
+        jpg_b64 = base64.b64encode(buffer).decode('utf-8')
+        try:
+            payload = {
+                "app_key":   self.main.config.get("app_key"),
+                "image":     jpg_b64,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+            response = requests.post(AWS_API_URL, json=payload, timeout=15)
+            if response.status_code == 200:
+                self.lbl_status.setStyleSheet("color: #10B981; font-weight: bold;")
+                self.lbl_status.setText(self.main.t("test_sent"))
+            else:
+                self.lbl_status.setStyleSheet("color: #EF4444; font-weight: bold;")
+                self.lbl_status.setText(self.main.t("test_error"))
+        except requests.RequestException:
+            self.lbl_status.setStyleSheet("color: #EF4444; font-weight: bold;")
+            self.lbl_status.setText(self.main.t("test_error"))
+        finally:
+            self.btn_send.setEnabled(True)
+
+    def closeEvent(self, event):
+        self.cam_timer.stop()
+        if self.cap:
+            self.cap.release()
+        super().closeEvent(event)
 
 
 # --- AYARLAR DİYALOĞU ---
@@ -481,6 +638,7 @@ class AuraTwinApp(QWidget):
         self.btn_register.setText(self.t("register_btn"))
         # Durum ekranı
         self.btn_settings.setText(self.t("settings_btn"))
+        self.btn_test.setText(self.t("test_btn"))
         self.btn_dashboard.setText(self.t("dashboard_btn"))
         self.btn_minimize.setText(self.t("minimize_btn"))
         self.btn_logout.setText(self.t("logout_btn"))
@@ -705,6 +863,22 @@ class AuraTwinApp(QWidget):
         self.btn_settings.hide()
         cl.addWidget(self.btn_settings)
 
+        self.btn_test = QPushButton(self.t("test_btn"))
+        self.btn_test.setFixedHeight(44)
+        self.btn_test.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        self.btn_test.setCursor(Qt.PointingHandCursor)
+        self.btn_test.setStyleSheet("""
+            QPushButton {
+                background-color: #4C1D95; color: white;
+                border-radius: 10px; border: none;
+            }
+            QPushButton:hover { background-color: #3B0764; }
+            QPushButton:pressed { background-color: #2E1065; }
+        """)
+        self.btn_test.clicked.connect(lambda: TestDialog(self).exec_())
+        self.btn_test.hide()
+        cl.addWidget(self.btn_test)
+
         self.btn_dashboard = QPushButton(self.t("dashboard_btn"))
         self.btn_dashboard.setFixedHeight(44)
         self.btn_dashboard.setFont(QFont("Segoe UI", 10, QFont.Bold))
@@ -809,6 +983,7 @@ class AuraTwinApp(QWidget):
         self.lbl_welcome.setText(self.t("welcome").format(name=full_name))
         self.lbl_welcome.show()
         self.btn_settings.show()
+        self.btn_test.show()
         self.btn_dashboard.show()
         self.btn_minimize.show()
         self.btn_logout.show()
@@ -826,6 +1001,7 @@ class AuraTwinApp(QWidget):
 
         self.lbl_welcome.hide()
         self.btn_settings.hide()
+        self.btn_test.hide()
         self.btn_dashboard.hide()
         self.btn_minimize.hide()
         self.btn_logout.hide()
