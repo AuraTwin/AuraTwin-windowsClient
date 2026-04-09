@@ -1,7 +1,6 @@
 __pycache__/
 config.json
 .env
-*.spec
 dist/
 build/
 .claude/
