@@ -214,11 +214,13 @@ To adjust settings, click **⚙ Settings** to:
 
 ---
 
-## Application Demo
+## Application Screenshots
 
-A full walkthrough of the AuraTwin Desktop Client — from App Key login to background analysis running in the system tray.
-
-<video src="https://github.com/user-attachments/assets/b61e2269-767e-4fb7-ad6a-acdbf648279d" controls width="600"></video>
+<p align="center">
+  <img src="https://i.hizliresim.com/lo5si1v.png" width="45%" />
+  &nbsp;&nbsp;
+  <img src="https://i.hizliresim.com/mpgnia8.png" width="45%" />
+</p>
 
 ---
 
