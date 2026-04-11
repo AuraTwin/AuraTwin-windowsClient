@@ -13,8 +13,8 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QLineEdit,
                              QPushButton, QVBoxLayout, QHBoxLayout,
                              QCheckBox, QComboBox, QDialog, QMessageBox,
                              QSystemTrayIcon, QMenu, QAction, QFrame)
-from PyQt5.QtGui import QIcon, QFont, QPixmap, QImage
-from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtGui import QIcon, QFont, QPixmap, QImage, QPainter, QPainterPath
+from PyQt5.QtCore import QTimer, Qt, QThread, pyqtSignal, QEvent
 
 # PyInstaller exe içinden çalışırken dosyaların yolunu doğru bul
 if getattr(sys, "frozen", False):
