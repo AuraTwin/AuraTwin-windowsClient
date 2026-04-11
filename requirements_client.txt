@@ -1,0 +1,7 @@
+# Minimal cross-platform dependencies for AuraTwin desktop client
+# Install with: pip3 install -r requirements_client.txt
+
+PyQt5>=5.15
+opencv-python>=4.8
+requests>=2.28
+python-dotenv>=1.0

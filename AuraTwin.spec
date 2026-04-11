@@ -1,4 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
+# Windows build spec — produces AuraTwin.exe
+# Run with: pyinstaller AuraTwin.spec
+# For macOS, use: pyinstaller AuraTwin_macOS.spec
 
 
 a = Analysis(
