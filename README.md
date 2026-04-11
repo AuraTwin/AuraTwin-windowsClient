@@ -1,8 +1,10 @@
-# AuraTwin Windows Client
+# AuraTwin Desktop Client
 
 Official desktop application for **AuraTwin** — a privacy-first, AI-powered well-being assistant that builds your affective digital twin.
 
 This repository is **Component 3** of the AuraTwin system: a lightweight Python application that runs silently in the background, captures webcam frames at configurable intervals, and transmits them securely to the AWS backend for emotion analysis.
+
+> **Cross-platform:** Runs and builds on both **Windows** and **macOS**.
 
 ---
 
@@ -14,7 +16,7 @@ AuraTwin is built on four tightly integrated components:
 |---|-----------|------------|------|
 | 1 | **Backend & AI Engine** | AWS EC2 + FastAPI + Mini-Xception | Emotion analysis, Firestore writes |
 | 2 | **Web Dashboard** | React/Vue + Firebase | User management, data visualization, App Key generation |
-| **3** | **Windows Client** *(this repo)* | **Python + PyQt5 + OpenCV** | Camera capture, secure transmission |
+| **3** | **Desktop Client** *(this repo)* | **Python + PyQt5 + OpenCV** | Camera capture, secure transmission |
 | 4 | **Digital Twin / AI Reports** | Google Gemini 2.5 Flash | Weekly well-being reports and personalized recommendations |
 
 ---
@@ -119,7 +121,10 @@ users/{uid}/last_report/data
 
 > **No Python required.** Just download and run.
 
-[**Download AuraTwin.exe (v1.0.0)**](https://github.com/AuraTwin/AuraTwin-windowsClient/releases/latest/download/AuraTwin.exe)
+| Platform | Download |
+|----------|----------|
+| Windows | [**AuraTwin.exe (v1.0.0)**](https://github.com/AuraTwin/AuraTwin-windowsClient/releases/latest/download/AuraTwin.exe) |
+| macOS | [**AuraTwin.app (v1.0.0)**](https://github.com/AuraTwin/AuraTwin-windowsClient/releases/latest/download/AuraTwin_macOS.zip) |
 
 Or visit the [Releases page](https://github.com/AuraTwin/AuraTwin-windowsClient/releases) for all versions.
 
@@ -156,14 +161,41 @@ AWS_API_URL=http://your-aws-endpoint/predict-emotion
 ### 3. Install dependencies
 
 ```bash
-pip install -r requirements.txt
+# Cross-platform (recommended)
+pip3 install -r requirements_client.txt
 ```
 
 ### 4. Run the application
 
 ```bash
+# macOS / Linux
+python3 main.py
+
+# Windows
 python main.py
 ```
+
+---
+
+## Building from Source
+
+Requires [PyInstaller](https://pyinstaller.org): `pip3 install pyinstaller`
+
+### Windows → AuraTwin.exe
+
+```bash
+pyinstaller AuraTwin.spec
+# Output: dist/AuraTwin.exe
+```
+
+### macOS → AuraTwin.app
+
+```bash
+pyinstaller AuraTwin_macOS.spec
+# Output: dist/AuraTwin.app
+```
+
+> **macOS camera access:** The `AuraTwin_macOS.spec` file injects `NSCameraUsageDescription` into the app bundle's `Info.plist`. Without this, macOS will silently deny camera access. Do **not** use the Windows spec to build on macOS.
 
 ---
 
@@ -184,7 +216,7 @@ To adjust settings, click **⚙ Settings** to:
 
 ## Application Demo
 
-A full walkthrough of the AuraTwin Windows Client — from App Key login to background analysis running in the system tray.
+A full walkthrough of the AuraTwin Desktop Client — from App Key login to background analysis running in the system tray.
 
 <video src="https://github.com/user-attachments/assets/b61e2269-767e-4fb7-ad6a-acdbf648279d" controls width="600"></video>
 
