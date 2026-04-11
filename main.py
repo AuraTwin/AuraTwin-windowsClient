@@ -665,6 +665,12 @@ class CaptureWorker(QThread):
             self.status_update.emit("status_no_camera", "error")
             return
 
+        # macOS kamerası ilk açılışta birkaç siyah kare döndürür (ısınma süresi).
+        # Bu kareler "kamera meşgul" heuristiğini yanlış tetikler — atıyoruz.
+        warmup = 5 if sys.platform != "win32" else 0
+        for _ in range(warmup):
+            cap.read()
+
         ret, frame = cap.read()
         cap.release()
 
