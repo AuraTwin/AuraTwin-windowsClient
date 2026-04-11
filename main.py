@@ -1,4 +1,6 @@
 import sys
+import warnings
+warnings.filterwarnings("ignore", message=".*NotOpenSSLWarning.*")
 import cv2
 import base64
 import json
@@ -30,8 +32,16 @@ FIRESTORE_BASE = (
     f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT_ID}"
     f"/databases/(default)/documents"
 )
-CONFIG_FILE   = "config.json"
+CONFIG_DIR    = os.path.join(os.path.expanduser("~"), ".auratwin")
+os.makedirs(CONFIG_DIR, exist_ok=True)
+CONFIG_FILE   = os.path.join(CONFIG_DIR, "config.json")
 LOGO_FILENAME = os.path.join(BASE_DIR, "AuraTwin_Logo.png")
+UI_FONT       = "Segoe UI" if sys.platform == "win32" else "Helvetica Neue"
+FONT_SCALE    = 1.0 if sys.platform == "win32" else 1.18
+
+def fs(n):
+    """Platform-aware font size — macOS renders Qt points smaller than Windows."""
+    return round(n * FONT_SCALE)
 
 # --- DİL SÖZLÜĞÜ ---
 STRINGS = {
@@ -44,13 +54,13 @@ STRINGS = {
         "verifying_btn":   "Doğrulanıyor...",
         "register_btn":    "Hesabın yok mu? Kayıt Ol",
         "welcome":         "Hoş Geldin,\n{name}! 👋",
-        "settings_btn":    "⚙️  Ayarlar",
+        "settings_btn":    "⚙  Ayarlar",
         "dashboard_btn":   "Dashboard'a Git",
         "minimize_btn":    "Sistem Tepsisine Küçült",
         "logout_btn":      "Çıkış Yap",
         # Durum mesajları
         "status_waiting":    "Bekleniyor...",
-        "status_connecting": "Firebase'e bağlanılıyor...",
+        "status_connecting": "Bağlanıyor...",
         "status_active":     "● Aktif — Analiz çalışıyor",
         "status_paused":     "⏸ Analiz duraklatıldı",
         "status_no_camera":  "● Kamera bulunamadı / meşgul",
@@ -67,7 +77,7 @@ STRINGS = {
         "tray_started":   "Arka planda çalışmaya başlandı.",
         # Ayarlar diyaloğu
         "settings_title":    "AuraTwin — Ayarlar",
-        "settings_heading":  "⚙️  Ayarlar",
+        "settings_heading":  "⚙  Ayarlar",
         "interval_label":    "Analiz Aralığı (dakika)",
         "interval_suffix":   " dk",
         "interval_note":     (
@@ -113,13 +123,13 @@ STRINGS = {
         "verifying_btn":   "Verifying...",
         "register_btn":    "No account? Register",
         "welcome":         "Welcome,\n{name}! 👋",
-        "settings_btn":    "⚙️  Settings",
+        "settings_btn":    "⚙  Settings",
         "dashboard_btn":   "Go to Dashboard",
         "minimize_btn":    "Minimize to Tray",
         "logout_btn":      "Log Out",
         # Status messages
         "status_waiting":    "Waiting...",
-        "status_connecting": "Connecting to Firebase...",
+        "status_connecting": "Connecting...",
         "status_active":     "● Active — Analysis running",
         "status_paused":     "⏸ Analysis paused",
         "status_no_camera":  "● Camera not found / busy",
@@ -136,7 +146,7 @@ STRINGS = {
         "tray_started":   "Started running in the background.",
         # Settings dialog
         "settings_title":    "AuraTwin — Settings",
-        "settings_heading":  "⚙️  Settings",
+        "settings_heading":  "⚙  Settings",
         "interval_label":    "Analysis Interval (minutes)",
         "interval_suffix":   " min",
         "interval_note":     (
@@ -220,6 +230,20 @@ def validate_app_key(app_key):
     }
 
 
+# --- MESAJ KUTUSU YARDIMCISI ---
+
+def show_msgbox(parent, icon, title, text):
+    box = QMessageBox(parent)
+    box.setWindowTitle(title)
+    box.setText(text)
+    box.setIcon(icon)
+    box.setStyleSheet(
+        "QLabel { color: #111111; }"
+        "QPushButton { color: #111111; }"
+    )
+    box.exec_()
+
+
 # --- TEST DİYALOĞU ---
 
 class TestDialog(QDialog):
@@ -238,35 +262,37 @@ class TestDialog(QDialog):
         self.setStyleSheet("background-color: #F5F3FF;")
 
         outer = QVBoxLayout()
-        outer.setContentsMargins(24, 24, 24, 24)
+        outer.setContentsMargins(20, 16, 20, 16)
 
         card = QFrame()
         card.setStyleSheet("QFrame { background-color: #FFFFFF; border-radius: 16px; }")
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(24, 28, 24, 24)
-        layout.setSpacing(14)
+        layout.setContentsMargins(12, 14, 12, 18)
+        layout.setSpacing(10)
 
         lbl_title = QLabel(self.main.t("test_heading"))
-        lbl_title.setFont(QFont("Segoe UI", 15, QFont.Bold))
+        lbl_title.setFont(QFont(UI_FONT, fs(15), QFont.Bold))
         lbl_title.setStyleSheet("color: #4C1D95;")
         lbl_title.setAlignment(Qt.AlignCenter)
         layout.addWidget(lbl_title)
 
-        # Kamera görüntüsü
+        # Kamera görüntüsü — 16:9
+        # Dialog 480 - outer(20+20) - card(12+12) = 416px genişlik, yükseklik 416*9/16=234
+        cam_w, cam_h = 416, 234
         self.lbl_camera = QLabel()
-        self.lbl_camera.setFixedSize(432, 324)
+        self.lbl_camera.setFixedSize(cam_w, cam_h)
         self.lbl_camera.setAlignment(Qt.AlignCenter)
         self.lbl_camera.setStyleSheet(
-            "background-color: #1E1B4B; border-radius: 10px; color: #9CA3AF;"
+            "background-color: #1E1B4B; border-radius: 14px; color: #9CA3AF;"
         )
         self.lbl_camera.setText("📷")
-        self.lbl_camera.setFont(QFont("Segoe UI", 32))
+        self.lbl_camera.setFont(QFont(UI_FONT, fs(32)))
         layout.addWidget(self.lbl_camera)
 
         # Durum etiketi
         self.lbl_status = QLabel("")
         self.lbl_status.setAlignment(Qt.AlignCenter)
-        self.lbl_status.setFont(QFont("Segoe UI", 9))
+        self.lbl_status.setFont(QFont(UI_FONT, fs(9)))
         self.lbl_status.setStyleSheet("color: #6B7280;")
         self.lbl_status.setWordWrap(True)
         layout.addWidget(self.lbl_status)
@@ -274,7 +300,7 @@ class TestDialog(QDialog):
         # Çek & Gönder butonu
         self.btn_send = QPushButton(self.main.t("test_send_btn"))
         self.btn_send.setFixedHeight(48)
-        self.btn_send.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self.btn_send.setFont(QFont(UI_FONT, fs(11), QFont.Bold))
         self.btn_send.setCursor(Qt.PointingHandCursor)
         self.btn_send.setStyleSheet("""
             QPushButton {
@@ -309,6 +335,19 @@ class TestDialog(QDialog):
         self.cam_timer.timeout.connect(self._update_frame)
         self.cam_timer.start(33)
 
+    @staticmethod
+    def _rounded_pixmap(pixmap, radius=14):
+        result = QPixmap(pixmap.size())
+        result.fill(Qt.transparent)
+        p = QPainter(result)
+        p.setRenderHint(QPainter.Antialiasing)
+        path = QPainterPath()
+        path.addRoundedRect(0, 0, pixmap.width(), pixmap.height(), radius, radius)
+        p.setClipPath(path)
+        p.drawPixmap(0, 0, pixmap)
+        p.end()
+        return result
+
     def _update_frame(self):
         if not self.cap or not self.cap.isOpened():
             return
@@ -319,9 +358,10 @@ class TestDialog(QDialog):
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = frame_rgb.shape
         qt_img = QImage(frame_rgb.data, w, h, ch * w, QImage.Format_RGB888)
-        self.lbl_camera.setPixmap(
-            QPixmap.fromImage(qt_img).scaled(432, 324, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        )
+        scaled = QPixmap.fromImage(qt_img).scaled(
+            416, 234, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation
+        ).copy(0, 0, 416, 234)
+        self.lbl_camera.setPixmap(self._rounded_pixmap(scaled))
 
     def _capture_and_send(self):
         if self._current_frame is None:
@@ -384,7 +424,7 @@ class SettingsDialog(QDialog):
 
         # Başlık
         self.lbl_title = QLabel()
-        self.lbl_title.setFont(QFont("Segoe UI", 15, QFont.Bold))
+        self.lbl_title.setFont(QFont(UI_FONT, fs(15), QFont.Bold))
         self.lbl_title.setStyleSheet("color: #4C1D95;")
         layout.addWidget(self.lbl_title)
 
@@ -392,7 +432,7 @@ class SettingsDialog(QDialog):
 
         # Analiz Aralığı
         self.lbl_interval = QLabel()
-        self.lbl_interval.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        self.lbl_interval.setFont(QFont(UI_FONT, fs(10), QFont.Bold))
         self.lbl_interval.setStyleSheet("color: #374151;")
         layout.addWidget(self.lbl_interval)
 
@@ -417,7 +457,7 @@ class SettingsDialog(QDialog):
             self.combo_interval.addItem(f"  {val} {suffix}", val)
         idx = self._interval_options.index(current_interval) if current_interval in self._interval_options else 2
         self.combo_interval.setCurrentIndex(idx)
-        self.combo_interval.setFont(QFont("Segoe UI", 11))
+        self.combo_interval.setFont(QFont(UI_FONT, fs(11)))
         self.combo_interval.setMaxVisibleItems(4)
         self.combo_interval.setStyleSheet("""
             QComboBox {
@@ -436,14 +476,14 @@ class SettingsDialog(QDialog):
         lbl_arrow = QLabel("▼")
         lbl_arrow.setFixedWidth(32)
         lbl_arrow.setAlignment(Qt.AlignCenter)
-        lbl_arrow.setFont(QFont("Segoe UI", 9))
+        lbl_arrow.setFont(QFont(UI_FONT, fs(9)))
         lbl_arrow.setStyleSheet("color: #7C3AED; border: none; background: transparent;")
         combo_inner.addWidget(lbl_arrow)
 
         layout.addWidget(combo_wrapper)
 
         self.lbl_note = QLabel()
-        self.lbl_note.setFont(QFont("Segoe UI", 9))
+        self.lbl_note.setFont(QFont(UI_FONT, fs(9)))
         self.lbl_note.setStyleSheet(
             "color: #6B7280; background-color: #F5F3FF; border-radius: 8px; padding: 10px;"
         )
@@ -454,13 +494,13 @@ class SettingsDialog(QDialog):
 
         # Analiz Durumu
         self.lbl_analysis = QLabel()
-        self.lbl_analysis.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        self.lbl_analysis.setFont(QFont(UI_FONT, fs(10), QFont.Bold))
         self.lbl_analysis.setStyleSheet("color: #374151;")
         layout.addWidget(self.lbl_analysis)
 
         self.btn_toggle = QPushButton()
         self.btn_toggle.setFixedHeight(44)
-        self.btn_toggle.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        self.btn_toggle.setFont(QFont(UI_FONT, fs(10), QFont.Bold))
         self.btn_toggle.setCursor(Qt.PointingHandCursor)
         self.btn_toggle.clicked.connect(self.toggle_analysis)
         layout.addWidget(self.btn_toggle)
@@ -469,7 +509,7 @@ class SettingsDialog(QDialog):
 
         # Dil Seçimi
         self.lbl_lang = QLabel()
-        self.lbl_lang.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        self.lbl_lang.setFont(QFont(UI_FONT, fs(10), QFont.Bold))
         self.lbl_lang.setStyleSheet("color: #374151;")
         layout.addWidget(self.lbl_lang)
 
@@ -478,7 +518,7 @@ class SettingsDialog(QDialog):
         self.btn_lang_en = QPushButton("🇬🇧  English")
         for btn in (self.btn_lang_tr, self.btn_lang_en):
             btn.setFixedHeight(38)
-            btn.setFont(QFont("Segoe UI", 10))
+            btn.setFont(QFont(UI_FONT, fs(10)))
             btn.setCursor(Qt.PointingHandCursor)
         self.btn_lang_tr.clicked.connect(lambda: self._change_lang("tr"))
         self.btn_lang_en.clicked.connect(lambda: self._change_lang("en"))
@@ -491,7 +531,7 @@ class SettingsDialog(QDialog):
         # Kaydet
         self.btn_save = QPushButton()
         self.btn_save.setFixedHeight(44)
-        self.btn_save.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self.btn_save.setFont(QFont(UI_FONT, fs(11), QFont.Bold))
         self.btn_save.setCursor(Qt.PointingHandCursor)
         self.btn_save.setStyleSheet("""
             QPushButton {
@@ -596,6 +636,69 @@ class SettingsDialog(QDialog):
         self.accept()
 
 
+# --- WORKER THREAD'LER ---
+
+class LoginWorker(QThread):
+    finished = pyqtSignal(object)
+
+    def __init__(self, app_key):
+        super().__init__()
+        self.app_key = app_key
+
+    def run(self):
+        result = validate_app_key(self.app_key)
+        self.finished.emit(result)
+
+
+class CaptureWorker(QThread):
+    status_update = pyqtSignal(str, str)
+
+    def __init__(self, app_key, aws_url):
+        super().__init__()
+        self.app_key = app_key
+        self.aws_url = aws_url
+
+    def run(self):
+        cap = cv2.VideoCapture(0)
+        if not cap.isOpened():
+            print("Kamera açılamadı.")
+            self.status_update.emit("status_no_camera", "error")
+            return
+
+        ret, frame = cap.read()
+        cap.release()
+
+        if not ret:
+            print("Görüntü alınamadı.")
+            self.status_update.emit("status_no_frame", "error")
+            return
+
+        if frame.mean() < 5:
+            print("Kamera meşgul (siyah frame) — bu periyot pas geçildi.")
+            self.status_update.emit("status_cam_busy", "warning")
+            return
+
+        _, buffer = cv2.imencode('.jpg', frame)
+        jpg_b64 = base64.b64encode(buffer).decode('utf-8')
+        print(f"Görüntü yakalandı! Boyut: {len(jpg_b64)} karakter.")
+
+        try:
+            payload = {
+                "app_key":   self.app_key,
+                "image":     jpg_b64,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+            response = requests.post(self.aws_url, json=payload, timeout=15)
+            print(f"AWS yanıtı: {response.status_code} — {response.text[:200]}")
+            if response.status_code == 200:
+                self.status_update.emit("status_active", "success")
+            else:
+                self.status_update.emit("status_conn_err", "error")
+        except requests.RequestException as e:
+            print(f"AWS bağlantı hatası: {e}")
+            self.status_update.emit("status_conn_err", "error")
+
+
 # --- ANA UYGULAMA ---
 
 class AuraTwinApp(QWidget):
@@ -610,6 +713,8 @@ class AuraTwinApp(QWidget):
         self.init_tray()
 
         self.is_paused = False
+        self._login_worker   = None
+        self._capture_worker = None
         self.timer = QTimer()
         self.timer.timeout.connect(self.capture_and_send)
 
@@ -636,6 +741,8 @@ class AuraTwinApp(QWidget):
         self.chk_remember.setText(self.t("remember"))
         self.btn_save.setText(self.t("login_btn"))
         self.btn_register.setText(self.t("register_btn"))
+        # Subtitle (durum ekranı)
+        self.lbl_sub.setText(self.t("subtitle"))
         # Durum ekranı
         self.btn_settings.setText(self.t("settings_btn"))
         self.btn_test.setText(self.t("test_btn"))
@@ -661,18 +768,30 @@ class AuraTwinApp(QWidget):
         active = """
             QPushButton {
                 background-color: #7C3AED; color: white;
-                border-radius: 8px; border: none;
+                border-radius: 8px; border: none; padding: 0 8px;
             }
         """
         inactive = """
             QPushButton {
-                background-color: transparent; color: #9CA3AF;
-                border: 2px solid #E5E7EB; border-radius: 8px;
+                background-color: transparent; color: #7C3AED;
+                border: none; padding: 0 8px;
             }
-            QPushButton:hover { border-color: #7C3AED; color: #7C3AED; }
+            QPushButton:hover { background-color: #DDD6FE; border-radius: 8px; }
         """
         self.btn_lang_tr.setStyleSheet(active if self.lang == "tr" else inactive)
         self.btn_lang_en.setStyleSheet(active if self.lang == "en" else inactive)
+
+    def eventFilter(self, obj, event):
+        if obj is self.token_input:
+            if event.type() == QEvent.FocusIn:
+                self._input_frame.setStyleSheet(
+                    "QFrame#inputFrame { border: 2px solid #7C3AED; background: #FFFFFF; border-radius: 10px; }"
+                )
+            elif event.type() == QEvent.FocusOut:
+                self._input_frame.setStyleSheet(
+                    "QFrame#inputFrame { border: 2px solid #DDD6FE; background: #FAFAFA; border-radius: 10px; }"
+                )
+        return super().eventFilter(obj, event)
 
     def _center_window(self):
         screen = QApplication.primaryScreen().availableGeometry()
@@ -739,29 +858,44 @@ class AuraTwinApp(QWidget):
         # Başlık
         lbl_title = QLabel("AuraTwin")
         lbl_title.setAlignment(Qt.AlignCenter)
-        lbl_title.setFont(QFont("Segoe UI", 22, QFont.Bold))
+        lbl_title.setFont(QFont(UI_FONT, fs(22), QFont.Bold))
         lbl_title.setStyleSheet("color: #4C1D95;")
         cl.addWidget(lbl_title)
 
-        # Alt başlık + Dil Butonu (aynı satırda)
-        sub_row = QHBoxLayout()
-        lbl_sub = QLabel(self.t("subtitle"))
-        lbl_sub.setFont(QFont("Segoe UI", 10))
-        lbl_sub.setStyleSheet("color: #7C3AED;")
-        sub_row.addWidget(lbl_sub)
-        sub_row.addStretch()
+        # Subtitle — sadece durum ekranında, ortalı, TR/EN duyarlı
+        self.lbl_sub = QLabel(self.t("subtitle"))
+        self.lbl_sub.setFont(QFont(UI_FONT, fs(10)))
+        self.lbl_sub.setStyleSheet("color: #7C3AED;")
+        self.lbl_sub.setAlignment(Qt.AlignCenter)
+        self.lbl_sub.hide()
+        cl.addWidget(self.lbl_sub)
+
+        # TR/EN pill toggle — sadece giriş ekranında, ortalı
+        self.lang_toggle_widget = QFrame()
+        self.lang_toggle_widget.setStyleSheet(
+            "QFrame { background: #EDE9FE; border-radius: 10px; }"
+        )
+        pill_layout = QHBoxLayout(self.lang_toggle_widget)
+        pill_layout.setContentsMargins(3, 3, 3, 3)
+        pill_layout.setSpacing(2)
 
         self.btn_lang_tr = QPushButton("TR")
         self.btn_lang_en = QPushButton("EN")
         for btn in (self.btn_lang_tr, self.btn_lang_en):
-            btn.setFixedSize(44, 28)
-            btn.setFont(QFont("Segoe UI", 9, QFont.Bold))
+            btn.setFixedHeight(30)
+            btn.setMinimumWidth(54)
+            btn.setFont(QFont(UI_FONT, fs(9), QFont.Bold))
             btn.setCursor(Qt.PointingHandCursor)
         self.btn_lang_tr.clicked.connect(lambda: self.apply_language("tr"))
         self.btn_lang_en.clicked.connect(lambda: self.apply_language("en"))
-        sub_row.addWidget(self.btn_lang_tr)
-        sub_row.addWidget(self.btn_lang_en)
-        cl.addLayout(sub_row)
+        pill_layout.addWidget(self.btn_lang_tr)
+        pill_layout.addWidget(self.btn_lang_en)
+
+        pill_center = QHBoxLayout()
+        pill_center.addStretch()
+        pill_center.addWidget(self.lang_toggle_widget)
+        pill_center.addStretch()
+        cl.addLayout(pill_center)
 
         self._update_login_lang_btns()
 
@@ -774,29 +908,52 @@ class AuraTwinApp(QWidget):
         # --- GİRİŞ EKRANI ---
         self.lbl_prompt = QLabel(self.t("prompt"))
         self.lbl_prompt.setAlignment(Qt.AlignCenter)
-        self.lbl_prompt.setFont(QFont("Segoe UI", 10))
+        self.lbl_prompt.setFont(QFont(UI_FONT, fs(10)))
         self.lbl_prompt.setStyleSheet("color: #374151; margin-top: 4px;")
         cl.addWidget(self.lbl_prompt)
 
+        self._input_frame = QFrame()
+        self._input_frame.setObjectName("inputFrame")
+        self._input_frame.setFixedHeight(44)
+        self._input_frame.setStyleSheet(
+            "QFrame#inputFrame { border: 2px solid #DDD6FE; border-radius: 10px; background: #FAFAFA; }"
+        )
+        input_row = QHBoxLayout(self._input_frame)
+        input_row.setContentsMargins(6, 0, 4, 0)
+        input_row.setSpacing(0)
+
         self.token_input = QLineEdit()
         self.token_input.setPlaceholderText(self.t("placeholder"))
-        self.token_input.setFixedHeight(42)
-        self.token_input.setFont(QFont("Segoe UI", 11))
+        self.token_input.setFont(QFont(UI_FONT, fs(11)))
         self.token_input.setAlignment(Qt.AlignCenter)
-        self.token_input.setStyleSheet("""
-            QLineEdit {
-                border: 2px solid #DDD6FE; border-radius: 10px;
-                padding: 0 12px; color: #1E1B4B; background: #FAFAFA;
-            }
-            QLineEdit:focus { border: 2px solid #7C3AED; background: #FFFFFF; }
-        """)
+        self.token_input.setStyleSheet(
+            "QLineEdit { border: none; background: transparent; color: #1E1B4B; padding: 0 4px; }"
+        )
+        self.token_input.returnPressed.connect(self.on_save_clicked)
+        self.token_input.installEventFilter(self)
         if self.config.get("app_key"):
             self.token_input.setText(self.config["app_key"])
-        self.token_input.returnPressed.connect(self.on_save_clicked)
-        cl.addWidget(self.token_input)
+
+        btn_paste = QPushButton("📋")
+        btn_paste.setFixedSize(32, 32)
+        btn_paste.setFont(QFont(UI_FONT, fs(13)))
+        btn_paste.setCursor(Qt.PointingHandCursor)
+        btn_paste.setToolTip("Panodan yapıştır")
+        btn_paste.setStyleSheet("""
+            QPushButton { background: transparent; border: none; color: #C4B5FD; border-radius: 6px; }
+            QPushButton:hover { background: #EDE9FE; color: #7C3AED; }
+            QPushButton:pressed { background: #DDD6FE; }
+        """)
+        btn_paste.clicked.connect(
+            lambda: self.token_input.setText(QApplication.clipboard().text().strip())
+        )
+
+        input_row.addWidget(self.token_input)
+        input_row.addWidget(btn_paste)
+        cl.addWidget(self._input_frame)
 
         self.chk_remember = QCheckBox(self.t("remember"))
-        self.chk_remember.setFont(QFont("Segoe UI", 9))
+        self.chk_remember.setFont(QFont(UI_FONT, fs(9)))
         self.chk_remember.setStyleSheet("""
             QCheckBox { color: #6B7280; spacing: 6px; }
             QCheckBox::indicator {
@@ -809,7 +966,7 @@ class AuraTwinApp(QWidget):
 
         self.btn_save = QPushButton(self.t("login_btn"))
         self.btn_save.setFixedHeight(44)
-        self.btn_save.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self.btn_save.setFont(QFont(UI_FONT, fs(11), QFont.Bold))
         self.btn_save.setCursor(Qt.PointingHandCursor)
         self.btn_save.setStyleSheet("""
             QPushButton {
@@ -825,7 +982,7 @@ class AuraTwinApp(QWidget):
 
         self.btn_register = QPushButton(self.t("register_btn"))
         self.btn_register.setFixedHeight(40)
-        self.btn_register.setFont(QFont("Segoe UI", 10))
+        self.btn_register.setFont(QFont(UI_FONT, fs(10)))
         self.btn_register.setCursor(Qt.PointingHandCursor)
         self.btn_register.setStyleSheet("""
             QPushButton {
@@ -842,7 +999,7 @@ class AuraTwinApp(QWidget):
         # --- DURUM EKRANI (gizli) ---
         self.lbl_welcome = QLabel("")
         self.lbl_welcome.setAlignment(Qt.AlignCenter)
-        self.lbl_welcome.setFont(QFont("Segoe UI", 13, QFont.Bold))
+        self.lbl_welcome.setFont(QFont(UI_FONT, fs(13), QFont.Bold))
         self.lbl_welcome.setStyleSheet("color: #4C1D95;")
         self.lbl_welcome.setWordWrap(True)
         self.lbl_welcome.hide()
@@ -850,7 +1007,7 @@ class AuraTwinApp(QWidget):
 
         self.btn_settings = QPushButton(self.t("settings_btn"))
         self.btn_settings.setFixedHeight(40)
-        self.btn_settings.setFont(QFont("Segoe UI", 10))
+        self.btn_settings.setFont(QFont(UI_FONT, fs(10)))
         self.btn_settings.setCursor(Qt.PointingHandCursor)
         self.btn_settings.setStyleSheet("""
             QPushButton {
@@ -865,7 +1022,7 @@ class AuraTwinApp(QWidget):
 
         self.btn_test = QPushButton(self.t("test_btn"))
         self.btn_test.setFixedHeight(44)
-        self.btn_test.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        self.btn_test.setFont(QFont(UI_FONT, fs(10), QFont.Bold))
         self.btn_test.setCursor(Qt.PointingHandCursor)
         self.btn_test.setStyleSheet("""
             QPushButton {
@@ -881,7 +1038,7 @@ class AuraTwinApp(QWidget):
 
         self.btn_dashboard = QPushButton(self.t("dashboard_btn"))
         self.btn_dashboard.setFixedHeight(44)
-        self.btn_dashboard.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        self.btn_dashboard.setFont(QFont(UI_FONT, fs(10), QFont.Bold))
         self.btn_dashboard.setCursor(Qt.PointingHandCursor)
         self.btn_dashboard.setStyleSheet("""
             QPushButton {
@@ -898,7 +1055,7 @@ class AuraTwinApp(QWidget):
 
         self.btn_minimize = QPushButton(self.t("minimize_btn"))
         self.btn_minimize.setFixedHeight(44)
-        self.btn_minimize.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        self.btn_minimize.setFont(QFont(UI_FONT, fs(10), QFont.Bold))
         self.btn_minimize.setCursor(Qt.PointingHandCursor)
         self.btn_minimize.setStyleSheet("""
             QPushButton {
@@ -913,7 +1070,7 @@ class AuraTwinApp(QWidget):
 
         self.btn_logout = QPushButton(self.t("logout_btn"))
         self.btn_logout.setFixedHeight(40)
-        self.btn_logout.setFont(QFont("Segoe UI", 10))
+        self.btn_logout.setFont(QFont(UI_FONT, fs(10)))
         self.btn_logout.setCursor(Qt.PointingHandCursor)
         self.btn_logout.setStyleSheet("""
             QPushButton {
@@ -929,7 +1086,7 @@ class AuraTwinApp(QWidget):
         # Durum etiketi
         self.lbl_status = QLabel("")
         self.lbl_status.setAlignment(Qt.AlignCenter)
-        self.lbl_status.setFont(QFont("Segoe UI", 9))
+        self.lbl_status.setFont(QFont(UI_FONT, fs(9)))
         self.lbl_status.setStyleSheet("color: #9CA3AF; margin-top: 4px;")
         cl.addWidget(self.lbl_status)
         self.set_status("status_waiting", "idle")
@@ -973,13 +1130,14 @@ class AuraTwinApp(QWidget):
         full_name = f"{name} {surname}".strip()
 
         self.lbl_prompt.hide()
-        self.token_input.hide()
+        self._input_frame.hide()
         self.chk_remember.hide()
         self.btn_save.hide()
         self.btn_register.hide()
-        self.btn_lang_tr.hide()
-        self.btn_lang_en.hide()
+        self.lang_toggle_widget.hide()
 
+        self.lbl_sub.setText(self.t("subtitle"))
+        self.lbl_sub.show()
         self.lbl_welcome.setText(self.t("welcome").format(name=full_name))
         self.lbl_welcome.show()
         self.btn_settings.show()
@@ -1000,6 +1158,7 @@ class AuraTwinApp(QWidget):
             os.remove(CONFIG_FILE)
 
         self.lbl_welcome.hide()
+        self.lbl_sub.hide()
         self.btn_settings.hide()
         self.btn_test.hide()
         self.btn_dashboard.hide()
@@ -1009,12 +1168,12 @@ class AuraTwinApp(QWidget):
         self.token_input.clear()
         self.chk_remember.setChecked(False)
         self.lbl_prompt.show()
-        self.token_input.show()
+        self._input_frame.show()
         self.chk_remember.show()
         self.btn_save.show()
         self.btn_register.show()
-        self.btn_lang_tr.show()
-        self.btn_lang_en.show()
+        self.lang_toggle_widget.show()
+        self._update_login_lang_btns()
 
         self.tray_icon.setToolTip(self.t("tray_waiting"))
         self.set_status("status_waiting", "idle")
@@ -1033,41 +1192,44 @@ class AuraTwinApp(QWidget):
     def on_save_clicked(self):
         app_key = self.token_input.text().strip()
         if not app_key:
-            QMessageBox.warning(self, "AuraTwin", self.t("err_no_key"))
+            show_msgbox(self, QMessageBox.Warning, "AuraTwin", self.t("err_no_key"))
             return
 
         self.btn_save.setEnabled(False)
         self.btn_save.setText(self.t("verifying_btn"))
         self.set_status("status_connecting", "info")
-        QApplication.processEvents()
 
-        result = validate_app_key(app_key)
+        self._login_worker = LoginWorker(app_key)
+        self._login_worker.finished.connect(self._on_login_result)
+        self._login_worker.start()
 
+    def _on_login_result(self, result):
         self.btn_save.setEnabled(True)
         self.btn_save.setText(self.t("login_btn"))
 
         if result == "connection_error":
             self.set_status("status_conn_err", "error")
-            QMessageBox.critical(self, self.t("err_conn_title"), self.t("err_conn_msg"))
+            show_msgbox(self, QMessageBox.Critical, self.t("err_conn_title"), self.t("err_conn_msg"))
             return
 
         if result == "permission_error":
             self.set_status("status_perm_err", "error")
-            QMessageBox.critical(self, self.t("err_perm_title"), self.t("err_perm_msg"))
+            show_msgbox(self, QMessageBox.Critical, self.t("err_perm_title"), self.t("err_perm_msg"))
             return
 
         if result is None:
             self.set_status("status_invalid", "error")
-            QMessageBox.warning(self, self.t("err_invalid_title"), self.t("err_invalid_msg"))
+            show_msgbox(self, QMessageBox.Warning, self.t("err_invalid_title"), self.t("err_invalid_msg"))
             return
 
+        app_key = self._login_worker.app_key
         self.config = {
-            "app_key":     app_key,
-            "uid":         result["uid"],
-            "name":        result["name"],
-            "surname":     result["surname"],
-            "remember_me": self.chk_remember.isChecked(),
-            "lang":        self.lang,
+            "app_key":          app_key,
+            "uid":              result["uid"],
+            "name":             result["name"],
+            "surname":          result["surname"],
+            "remember_me":      self.chk_remember.isChecked(),
+            "lang":             self.lang,
             "interval_minutes": self.config.get("interval_minutes", 5),
         }
         self.save_config()
@@ -1116,48 +1278,13 @@ class AuraTwinApp(QWidget):
         )
 
     def capture_and_send(self):
-        cap = cv2.VideoCapture(0)
-
-        if not cap.isOpened():
-            print("Kamera açılamadı.")
-            self.set_status("status_no_camera", "error")
+        if self._capture_worker is not None and self._capture_worker.isRunning():
             return
-
-        ret, frame = cap.read()
-        cap.release()
-
-        if not ret:
-            print("Görüntü alınamadı.")
-            self.set_status("status_no_frame", "error")
-            return
-
-        # Kamera meşgul kontrolü: ortalama parlaklık 5'in altındaysa siyah frame → kamera başka uygulama tarafından tutuluyor
-        if frame.mean() < 5:
-            print("Kamera meşgul (siyah frame) — bu periyot pas geçildi.")
-            self.set_status("status_cam_busy", "warning")
-            return
-
-        _, buffer = cv2.imencode('.jpg', frame)
-        jpg_b64 = base64.b64encode(buffer).decode('utf-8')
-
-        print(f"Görüntü yakalandı! Boyut: {len(jpg_b64)} karakter.")
-        self.set_status("status_active", "success")
-
-        try:
-            payload = {
-                "app_key":   self.config.get("app_key"),
-                "image":     jpg_b64,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
-            response = requests.post(AWS_API_URL, json=payload, timeout=15)
-            print(f"AWS yanıtı: {response.status_code} — {response.text[:200]}")
-            if response.status_code == 200:
-                self.set_status("status_active", "success")
-            else:
-                self.set_status("status_conn_err", "error")
-        except requests.RequestException as e:
-            print(f"AWS bağlantı hatası: {e}")
-            self.set_status("status_conn_err", "error")
+        self._capture_worker = CaptureWorker(
+            self.config.get("app_key"), AWS_API_URL
+        )
+        self._capture_worker.status_update.connect(self.set_status)
+        self._capture_worker.start()
 
 
 # --- BAŞLAT ---
