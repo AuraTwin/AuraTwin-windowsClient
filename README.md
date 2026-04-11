@@ -8,6 +8,16 @@ This repository is **Component 3** of the AuraTwin system: a lightweight Python 
 
 ---
 
+## Application Screenshots
+
+<p align="center">
+  <img src="https://i.hizliresim.com/lo5si1v.png" width="45%" />
+  &nbsp;&nbsp;
+  <img src="https://i.hizliresim.com/mpgnia8.png" width="45%" />
+</p>
+
+---
+
 ## System Architecture
 
 AuraTwin is built on four tightly integrated components:
@@ -211,16 +221,6 @@ To adjust settings, click **⚙ Settings** to:
 - Change the capture interval (1–60 minutes)
 - Pause or resume analysis
 - Switch the UI language (TR / EN)
-
----
-
-## Application Screenshots
-
-<p align="center">
-  <img src="https://i.hizliresim.com/lo5si1v.png" width="45%" />
-  &nbsp;&nbsp;
-  <img src="https://i.hizliresim.com/mpgnia8.png" width="45%" />
-</p>
 
 ---
 
