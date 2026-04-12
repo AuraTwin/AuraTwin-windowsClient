@@ -56,10 +56,9 @@ Image deleted from RAM on the server — no image ever persisted anywhere
 - Graceful error handling for connection errors, permission errors, and invalid keys
 
 ### Background Operation
-- Runs silently in the **System Tray** (bottom-right clock area)
+- Runs silently in the **System Tray** or **macOS Menu Bar**
 - Right-click tray menu: Show, Go to Dashboard, Quit
 - Closing the window minimizes to tray — the app never stops unexpectedly
-- Tray tooltip always shows the current user's name
 
 ### Capture & Release Camera
 - Camera is opened **only for the single frame capture** then immediately released
@@ -123,8 +122,8 @@ users/{uid}/last_report/data
 
 | Platform | Download |
 |----------|----------|
-| Windows | [**AuraTwin.exe (v1.0.0)**](https://github.com/AuraTwin/AuraTwin-windowsClient/releases/latest/download/AuraTwin.exe) |
-| macOS | [**AuraTwin.app (v1.0.0)**](https://github.com/AuraTwin/AuraTwin-windowsClient/releases/latest/download/AuraTwin_macOS.zip) |
+| Windows | [**AuraTwin.exe**](https://github.com/AuraTwin/AuraTwin-windowsClient/releases/) |
+| macOS | [**AuraTwin.app**](https://github.com/AuraTwin/AuraTwin-windowsClient/releases/) |
 
 Or visit the [Releases page](https://github.com/AuraTwin/AuraTwin-windowsClient/releases) for all versions.
 
